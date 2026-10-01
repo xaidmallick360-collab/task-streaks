@@ -1,5 +1,5 @@
-const CACHE="taskflow-pro-v2-1-2026-10";
-const ASSETS=["./","./index.html?v=2.1.0","./style.css?v=2.1.0","./app.js?v=2.1.0","./manifest.json?v=2.1.0","./icon-192.png?v=2.1.0","./icon-512.png?v=2.1.0"];
+const CACHE="taskflow-pro-v2-2-2026-10";
+const ASSETS=["./","./index.html?v=2.2.0","./style.css?v=2.2.0","./app.js?v=2.2.0","./manifest.json?v=2.2.0","./icon-192.png?v=2.2.0","./icon-512.png?v=2.2.0"];
 
 self.addEventListener("install",event=>{
   self.skipWaiting();
@@ -27,4 +27,9 @@ self.addEventListener("notificationclick",event=>{
     for(const c of list){if("focus"in c)return c.focus()}
     return clients.openWindow("./");
   }));
+});
+
+self.addEventListener("push",event=>{
+  let d={};try{d=event.data.json()}catch{}
+  event.waitUntil(self.registration.showNotification(d.title||"TaskFlow",{body:d.body||"",tag:d.tag,renotify:true,icon:"icon-192.png?v=2.2.0",badge:"icon-192.png?v=2.2.0",vibrate:[200,100,200]}));
 });

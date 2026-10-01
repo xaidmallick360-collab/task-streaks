@@ -9,3 +9,5 @@ Important:
 
 v2.1 changes: templates, ringtones + snooze reminders, working notifications via service worker, iOS/Android safe-area layout, 7-day chart.
 Note: web apps cannot fire a notification at an exact time when fully closed (no push server). Reminders ring while the app is open or backgrounded, and any missed within 2 hours fire when you reopen it.
+
+v2.2: background push. Deploy the /worker folder first (see worker/SETUP.md), then set PUSH_URL and VAPID_PUBLIC at the bottom of app.js.

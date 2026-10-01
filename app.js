@@ -1,4 +1,4 @@
-const APP_VERSION="2.1.0";
+const APP_VERSION="2.2.0";
 const KEY="taskflow-pro-v1"; // Keep existing data so your tasks/history are preserved.
 let db=JSON.parse(localStorage.getItem(KEY)||'{"tasks":[],"logs":[],"settings":{"theme":"light"}}');
 let deferredInstall=null;
@@ -117,7 +117,7 @@ $("#resetBtn").onclick=()=>{if(confirm("Reset all local TaskFlow data?")){db={ta
 window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();deferredInstall=e});
 $("#installSettings").onclick=async()=>{if(deferredInstall){deferredInstall.prompt();await deferredInstall.userChoice;deferredInstall=null}else toast("On iPhone: Safari Share → Add to Home Screen")};
 function checkReminder(t){if(t.time&&"Notification"in window&&Notification.permission==="granted") new Notification("TaskFlow",{body:`${t.name} completed. Keep your ${currentStreak(t)}-day streak!`})}
-if("serviceWorker"in navigator)navigator.serviceWorker.register("sw.js?v=2.1.0",{updateViaCache:"none"}).catch(()=>{});
+if("serviceWorker"in navigator)navigator.serviceWorker.register("sw.js?v=2.2.0",{updateViaCache:"none"}).catch(()=>{});
 
 /* ===== v2.1 additions ===== */
 db.settings=Object.assign({theme:"light",sound:"chime",volume:.7,vibrate:true,snooze:10},db.settings||{});
@@ -149,7 +149,7 @@ function buzz(){if(db.settings.vibrate&&navigator.vibrate)navigator.vibrate([200
 /* --- notifications (via service worker, required on iOS/Android) --- */
 async function notify(title,body,tag){
  if(!("Notification"in window)||Notification.permission!=="granted")return;
- try{const reg=await navigator.serviceWorker.ready;await reg.showNotification(title,{body,tag,icon:"icon-192.png?v=2.1.0",badge:"icon-192.png?v=2.1.0",vibrate:[200,100,200],renotify:true})}
+ try{const reg=await navigator.serviceWorker.ready;await reg.showNotification(title,{body,tag,icon:"icon-192.png?v=2.2.0",badge:"icon-192.png?v=2.2.0",vibrate:[200,100,200],renotify:true})}
  catch{try{new Notification(title,{body,tag})}catch{}}
 }
 checkReminder=function(t){notify("TaskFlow",`${t.name} done. Keep your ${currentStreak(t)}-day streak!`,"done-"+t.id)};
@@ -228,3 +228,30 @@ function renderWeek(){
 }
 const _render=render;render=function(){_render();renderWeek();bindSettings()};
 applyTheme();render();tick();
+
+/* ===== v2.2 background push ===== */
+const PUSH_URL="https://taskflow-push.amin-taskflow-2026.workers.dev"; // set after deploying /worker
+const VAPID_PUBLIC="BDtWDQbR8UC0kpbF4y5mruoiTKR-E-vuslfBDyyVq5TrCrwNJ2XL4p7LFR38HRJ5SNwlyNNmBE_WGlMgwQyYKUQ";
+const pushReady=()=>PUSH_URL.startsWith("https://")&&!PUSH_URL.includes("YOURNAME")&&!VAPID_PUBLIC.includes("PASTE");
+const b64=s=>{const r=(s+"=".repeat((4-s.length%4)%4)).replace(/-/g,"+").replace(/_/g,"/");return Uint8Array.from(atob(r),c=>c.charCodeAt(0))};
+async function pushSub(create){const reg=await navigator.serviceWorker.ready;let s=await reg.pushManager.getSubscription();if(!s&&create)s=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:b64(VAPID_PUBLIC)});return s}
+let lastSync="",syncT;
+async function syncPush(force){
+ if(!db.settings.push||!pushReady())return;
+ try{const s=await pushSub(false);if(!s)return;
+  const tasks=db.tasks.filter(t=>t.time).map(({id,name,time,repeat,active,createdAt,dueDate,goal})=>({id,name,time,repeat,active,createdAt,dueDate,goal}));
+  const done={};db.tasks.forEach(t=>{const n=logsFor(t.id).length;if(n)done[t.id]=n});
+  const body=JSON.stringify({sub:s.toJSON(),tz:Intl.DateTimeFormat().resolvedOptions().timeZone,tasks,done,date:today()});
+  if(!force&&body===lastSync)return;
+  await fetch(PUSH_URL+"/sync",{method:"POST",headers:{"Content-Type":"text/plain"},body});lastSync=body;
+ }catch(e){}
+}
+$("#pushBtn").onclick=async()=>{
+ if(!pushReady()){toast("Set PUSH_URL and VAPID_PUBLIC in app.js first");return}
+ if(!("PushManager"in window)){toast("On iPhone, open the Home Screen app first");return}
+ if(await Notification.requestPermission()!=="granted"){toast("Permission blocked in device settings");return}
+ try{await pushSub(true);db.settings.push=true;persist();await syncPush(true);toast("Background reminders on")}catch(e){toast("Push setup failed")}
+};
+const _render2=render;render=function(){_render2();clearTimeout(syncT);syncT=setTimeout(()=>syncPush(),1500)};
+document.addEventListener("visibilitychange",()=>{if(!document.hidden)syncPush()});
+syncPush();
