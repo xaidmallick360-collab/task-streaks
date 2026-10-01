@@ -110,7 +110,7 @@ function toggleTheme(){db.settings.theme=db.settings.theme==="dark"?"light":"dar
 function applyTheme(){document.documentElement.dataset.theme=db.settings.theme==="dark"?"dark":"light"}
 $("#themeBtn").onclick=toggleTheme;
 $("#notifyBtn").onclick=async()=>{if(!("Notification"in window)){toast("Notifications are not supported here");return}const p=await Notification.requestPermission();toast(p==="granted"?"Notifications enabled":"Permission not granted")};
-$("#backupBtn").onclick=exportData;$("#exportBtn").onclick=exportData;
+$("#backupBtn").onclick=exportData;const eb=$("#exportBtn");if(eb)eb.onclick=exportData;
 function exportData(){const blob=new Blob([JSON.stringify(db,null,2)],{type:"application/json"}),a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="taskflow-backup-"+today()+".json";a.click();URL.revokeObjectURL(a.href);toast("Backup exported")}
 $("#importInput").onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{const x=JSON.parse(r.result);if(!x.tasks||!x.logs)throw Error();db=x;save();toast("Backup imported")}catch{toast("Invalid backup file")}};r.readAsText(f)};
 $("#resetBtn").onclick=()=>{if(confirm("Reset all local TaskFlow data?")){db={tasks:[],logs:[],settings:{theme:"light"}};save();toast("Data reset")}};
