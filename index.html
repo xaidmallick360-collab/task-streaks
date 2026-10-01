@@ -1,102 +1,96 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#111827">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="Task Streaks">
-  <link rel="manifest" href="manifest.json">
-  <link rel="apple-touch-icon" href="icon-192.png">
-  <link rel="stylesheet" href="style.css">
-  <title>Task Streaks</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0b1020">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="TaskFlow">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="stylesheet" href="style.css">
+<title>TaskFlow — Tasks & Streaks</title>
 </head>
 <body>
-  <main class="app">
-    <header class="topbar">
-      <div>
-        <div class="eyebrow">MY PRODUCTIVITY</div>
-        <h1>Task Streaks</h1>
-      </div>
-      <button id="installBtn" class="icon-btn hidden" aria-label="Install app">＋</button>
-    </header>
+<div id="app">
+<header class="topbar">
+  <div class="brand"><div class="logo">✓</div><div><b>TaskFlow</b><span>Tasks & Streaks</span></div></div>
+  <div class="top-actions"><button id="searchBtn" class="ghost" title="Search">⌕</button><button id="themeBtn" class="ghost" title="Theme">◐</button><button id="settingsBtn" class="ghost" title="Settings">⚙</button></div>
+</header>
 
-    <section class="hero">
-      <div>
-        <p class="muted">Today's progress</p>
-        <div class="progress-row">
-          <strong id="progressText">0 / 0</strong>
-          <span id="progressPercent">0%</span>
-        </div>
-        <div class="progress"><div id="progressBar"></div></div>
-      </div>
-      <div class="hero-fire">🔥</div>
-    </section>
-
-    <nav class="tabs">
-      <button class="tab active" data-tab="today">Today</button>
-      <button class="tab" data-tab="tasks">Tasks</button>
-      <button class="tab" data-tab="stats">Streaks</button>
-    </nav>
-
-    <section id="today" class="panel active">
-      <div class="section-head">
-        <h2>Today's tasks</h2>
-        <button class="primary small" id="addTodayBtn">+ Add</button>
-      </div>
-      <div id="todayList" class="task-list"></div>
-      <div id="emptyToday" class="empty hidden">
-        <div class="empty-icon">🎯</div>
-        <h3>No tasks yet</h3>
-        <p>Add your first task and start building your streak.</p>
-      </div>
-    </section>
-
-    <section id="tasks" class="panel">
-      <div class="section-head">
-        <h2>All tasks</h2>
-        <button class="primary small" id="addTaskBtn">+ Add task</button>
-      </div>
-      <div id="allTasksList" class="task-list"></div>
-    </section>
-
-    <section id="stats" class="panel">
-      <div class="section-head"><h2>Your streaks</h2></div>
-      <div id="statsList" class="stats-list"></div>
-    </section>
-  </main>
-
-  <div id="modal" class="modal hidden">
-    <div class="modal-card">
-      <div class="modal-head">
-        <h2 id="modalTitle">Add task</h2>
-        <button id="closeModal" class="close">×</button>
-      </div>
-      <form id="taskForm">
-        <input type="hidden" id="taskId">
-        <label>Task name
-          <input id="taskName" required maxlength="80" placeholder="e.g. Daily report">
-        </label>
-        <label>Repeat
-          <select id="taskRepeat">
-            <option value="daily">Every day</option>
-            <option value="weekdays">Weekdays</option>
-            <option value="weekly">Weekly</option>
-          </select>
-        </label>
-        <label>Reminder time <span class="optional">optional</span>
-          <input id="taskTime" type="time">
-        </label>
-        <div class="form-actions">
-          <button type="button" class="secondary" id="cancelBtn">Cancel</button>
-          <button type="submit" class="primary">Save task</button>
-        </div>
-      </form>
-    </div>
+<main>
+<section id="dashboardView" class="view active">
+  <div class="welcome"><div><p class="kicker" id="dateLabel"></p><h1>Good day 👋</h1><p class="muted">Stay consistent. Build your streak.</p></div><button class="primary" id="quickAdd">+ New task</button></div>
+  <div class="metrics">
+    <div class="metric"><span>Today's progress</span><strong id="mProgress">0%</strong><div class="mini-progress"><i id="mProgressBar"></i></div></div>
+    <div class="metric"><span>Completed</span><strong id="mCompleted">0</strong><small>logs today</small></div>
+    <div class="metric"><span>Active streaks</span><strong id="mStreaks">0</strong><small>tasks on a run</small></div>
+    <div class="metric"><span>Best streak</span><strong id="mBest">0</strong><small>days</small></div>
   </div>
+  <div class="section-title"><h2>Today</h2><button class="link" data-nav="tasks">View all</button></div>
+  <div id="todayTasks" class="cards"></div>
+  <div id="todayEmpty" class="empty hidden"><div>🎯</div><h3>Your day is clear</h3><p>Add a task to start building your routine.</p><button class="primary" id="emptyAdd">Create task</button></div>
+  <div class="section-title"><h2>Recent activity</h2><button class="link" data-nav="history">History</button></div>
+  <div id="recentActivity" class="activity"></div>
+</section>
 
-  <div id="toast" class="toast"></div>
-  <script src="app.js"></script>
+<section id="tasksView" class="view">
+  <div class="page-head"><div><p class="kicker">YOUR ROUTINE</p><h1>Tasks</h1></div><button class="primary" id="addTask">+ New task</button></div>
+  <div class="filters"><input id="taskSearch" placeholder="Search tasks…"><select id="taskFilter"><option value="all">All</option><option value="active">Active</option><option value="paused">Paused</option></select><select id="priorityFilter"><option value="all">All priorities</option><option value="high">High</option><option value="medium">Medium</option><option value="low">Low</option></select></div>
+  <div id="allTasks" class="cards"></div>
+</section>
+
+<section id="statsView" class="view">
+  <div class="page-head"><div><p class="kicker">CONSISTENCY</p><h1>Streaks</h1></div></div>
+  <div class="streak-hero"><div><span>🔥</span><div><small>Longest streak</small><strong id="longest">0 days</strong></div></div><div><span>⚡</span><div><small>Logs this month</small><strong id="monthLogs">0</strong></div></div></div>
+  <div id="streakList" class="cards"></div>
+</section>
+
+<section id="historyView" class="view">
+  <div class="page-head"><div><p class="kicker">ACTIVITY</p><h1>History</h1></div><button class="secondary" id="exportBtn">Export</button></div>
+  <div id="historyList" class="history-list"></div>
+</section>
+
+<section id="settingsView" class="view">
+  <div class="page-head"><div><p class="kicker">PREFERENCES</p><h1>Settings</h1></div></div>
+  <div class="settings-card">
+    <div class="setting"><div><b>Notifications</b><small>Allow reminder notifications when supported by your browser.</small></div><button id="notifyBtn" class="secondary">Enable</button></div>
+    <div class="setting"><div><b>Install app</b><small>Add TaskFlow to your Home Screen.</small></div><button id="installSettings" class="secondary">Install</button></div>
+    <div class="setting"><div><b>Export backup</b><small>Download all tasks, logs and settings as JSON.</small></div><button id="backupBtn" class="secondary">Export</button></div>
+    <div class="setting"><div><b>Import backup</b><small>Restore a previous TaskFlow backup.</small></div><label class="secondary file-btn">Import<input id="importInput" type="file" accept=".json"></label></div>
+    <div class="setting danger"><div><b>Reset local data</b><small>This removes tasks and history from this browser.</small></div><button id="resetBtn" class="danger-btn">Reset</button></div>
+  </div>
+  <p class="note">Your current version stores data locally on this device. A future cloud-sync edition can add account login and multi-device synchronization.</p>
+</section>
+</main>
+
+<nav class="bottom-nav">
+<button class="nav active" data-nav="dashboard"><span>⌂</span>Today</button>
+<button class="nav" data-nav="tasks"><span>✓</span>Tasks</button>
+<button class="nav" data-nav="stats"><span>🔥</span>Streaks</button>
+<button class="nav" data-nav="history"><span>◷</span>History</button>
+<button class="nav" data-nav="settings"><span>⚙</span>Settings</button>
+</nav>
+
+<div id="taskModal" class="modal hidden"><div class="modal-sheet">
+<div class="modal-head"><div><p class="kicker">TASK</p><h2 id="modalTitle">New task</h2></div><button class="close" data-close="taskModal">×</button></div>
+<form id="taskForm">
+<input type="hidden" id="editId">
+<label>Task name<input id="name" maxlength="100" required placeholder="e.g. Daily report"></label>
+<div class="grid2"><label>Category<select id="category"><option>Work</option><option>Personal</option><option>Health</option><option>Study</option><option>Finance</option><option>Other</option></select></label>
+<label>Priority<select id="priority"><option value="high">High</option><option value="medium" selected>Medium</option><option value="low">Low</option></select></label></div>
+<label>Repeat<select id="repeat"><option value="daily">Every day</option><option value="weekdays">Weekdays</option><option value="weekly">Weekly</option><option value="once">One time</option></select></label>
+<div class="grid2"><label>Reminder time <small>optional</small><input id="time" type="time"></label><label>Daily goal <small>e.g. 3 times</small><input id="goal" type="number" min="1" max="999" value="1"></label></div>
+<label>Notes <small>optional</small><textarea id="notes" maxlength="500" placeholder="Add useful details…"></textarea></label>
+<label class="switch-row"><span><b>Active task</b><small>Include it in your routine.</small></span><input id="active" type="checkbox" checked><i></i></label>
+<div class="form-actions"><button type="button" class="secondary" data-close="taskModal">Cancel</button><button class="primary">Save task</button></div>
+</form></div></div>
+
+<div id="detailModal" class="modal hidden"><div class="modal-sheet"><div class="modal-head"><div><p class="kicker">TODAY</p><h2 id="detailName"></h2></div><button class="close" data-close="detailModal">×</button></div><div id="detailBody"></div></div></div>
+<div id="searchModal" class="modal hidden"><div class="modal-sheet"><div class="modal-head"><h2>Search</h2><button class="close" data-close="searchModal">×</button></div><input id="globalSearch" class="big-input" placeholder="Search tasks and notes…"><div id="searchResults"></div></div></div>
+<div id="toast" class="toast"></div>
+</div>
+<script src="app.js"></script>
 </body>
 </html>

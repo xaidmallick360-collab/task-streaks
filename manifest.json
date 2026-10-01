@@ -1,14 +1,11 @@
 {
-  "name": "Task Streaks",
-  "short_name": "Streaks",
-  "description": "A simple recurring task and streak tracker.",
-  "start_url": "./",
-  "display": "standalone",
-  "background_color": "#f5f7fb",
-  "theme_color": "#111827",
-  "orientation": "portrait",
-  "icons": [
-    {"src":"icon-192.png","sizes":"192x192","type":"image/png"},
-    {"src":"icon-512.png","sizes":"512x512","type":"image/png"}
-  ]
+"name":"TaskFlow — Tasks & Streaks",
+"short_name":"TaskFlow",
+"description":"Professional recurring task, multi-completion and streak tracker.",
+"start_url":"./",
+"display":"standalone",
+"background_color":"#f5f7fb",
+"theme_color":"#0b1020",
+"orientation":"portrait",
+"icons":[{"src":"icon-192.png","sizes":"192x192","type":"image/png"},{"src":"icon-512.png","sizes":"512x512","type":"image/png"}]
 }

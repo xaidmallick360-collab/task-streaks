@@ -1,105 +1,119 @@
-const KEY="task-streaks-v1";
-let data=JSON.parse(localStorage.getItem(KEY)||'{"tasks":[],"history":{}}');
+const KEY="taskflow-pro-v1";
+let db=JSON.parse(localStorage.getItem(KEY)||'{"tasks":[],"logs":[],"settings":{"theme":"light"}}');
 let deferredInstall=null;
-
-const $=s=>document.querySelector(s);
-const today=()=>{const d=new Date();return d.toISOString().slice(0,10)};
+const $=s=>document.querySelector(s), $$=s=>document.querySelectorAll(s);
+const pad=n=>String(n).padStart(2,"0");
+const dateKey=d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+const today=()=>dateKey(new Date());
 const uid=()=>crypto.randomUUID?crypto.randomUUID():Date.now()+"-"+Math.random();
-const save=()=>{localStorage.setItem(KEY,JSON.stringify(data));render()};
-const fmtDate=d=>new Date(d+"T00:00:00").toLocaleDateString(undefined,{month:"short",day:"numeric"});
-const dateOffset=(date,n)=>{const d=new Date(date+"T00:00:00");d.setDate(d.getDate()+n);return d.toISOString().slice(0,10)};
-function scheduled(task,date){
-  const dow=new Date(date+"T00:00:00").getDay();
-  if(task.repeat==="weekdays") return dow>=1&&dow<=5;
-  if(task.repeat==="weekly") return new Date(task.createdAt).getDay()===dow;
-  return true;
+const save=()=>{localStorage.setItem(KEY,JSON.stringify(db));render()};
+const esc=s=>String(s||"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;"}[c]));
+function day(d,n){const x=new Date(d+"T12:00:00");x.setDate(x.getDate()+n);return dateKey(x)}
+function fmt(d,opts={month:"short",day:"numeric",year:"numeric"}){return new Date(d+"T12:00:00").toLocaleDateString(undefined,opts)}
+function scheduled(t,d){
+ if(!t.active)return false;
+ if(t.repeat==="once")return t.dueDate===d;
+ const dow=new Date(d+"T12:00:00").getDay();
+ if(t.repeat==="weekdays")return dow>=1&&dow<=5;
+ if(t.repeat==="weekly"){const created=new Date(t.createdAt+"T12:00:00").getDay();return dow===created}
+ return d>=t.createdAt;
 }
-function done(taskId,date){return !!data.history[date]?.includes(taskId)}
-function toggle(taskId,date=today()){
-  data.history[date]??=[];
-  const a=data.history[date],i=a.indexOf(taskId);
-  if(i>=0)a.splice(i,1);else a.push(taskId);
-  save();
+function logsFor(id,d=today()){return db.logs.filter(x=>x.taskId===id&&x.date===d)}
+function addLog(id){
+ const t=db.tasks.find(x=>x.id===id); if(!t)return;
+ db.logs.push({id:uid(),taskId:id,date:today(),time:new Date().toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"}),note:""});
+ save(); toast("Logged +1"); checkReminder(t);
 }
-function currentStreak(task){
-  let d=today(), count=0;
-  for(let i=0;i<3660;i++){
-    if(!scheduled(task,d)) {d=dateOffset(d,-1);continue}
-    if(done(task.id,d)){count++;d=dateOffset(d,-1)}else break;
-  }
-  return count;
+function removeLog(id){db.logs=db.logs.filter(x=>x.id!==id);save()}
+function currentStreak(t){
+ let d=today(),run=0,guard=0;
+ while(guard++<4000){
+  if(!scheduled(t,d)){d=day(d,-1);continue}
+  if(logsFor(t.id,d).length){run++;d=day(d,-1)}else break
+ }
+ return run
 }
-function bestStreak(task){
-  let dates=[];
-  for(const [d,ids] of Object.entries(data.history)) if(ids.includes(task.id)&&scheduled(task,d)) dates.push(d);
-  dates.sort();
-  let best=0,run=0,prev=null;
-  for(const d of dates){if(prev&&dateOffset(prev,1)===d)run++;else run=1;best=Math.max(best,run);prev=d}
-  return best;
+function bestStreak(t){
+ const dates=[...new Set(db.logs.filter(x=>x.taskId===t.id).map(x=>x.date))].sort();
+ let best=0,run=0,prev=null;
+ for(const d of dates){if(prev&&day(prev,1)===d)run++;else run=1;best=Math.max(best,run);prev=d}
+ return best
 }
-function repeatLabel(r){return {daily:"Daily",weekdays:"Weekdays",weekly:"Weekly"}[r]||r}
-function taskCard(t,showCheck=true){
-  const isDone=done(t.id,today());
-  return `<div class="task">
-    ${showCheck?`<button class="check ${isDone?"done":""}" data-toggle="${t.id}">${isDone?"✓":""}</button>`:""}
-    <div class="task-main"><div class="task-name">${escapeHtml(t.name)}</div>
-    <div class="task-meta">${repeatLabel(t.repeat)}${t.time?" · "+t.time:""}</div></div>
-    <div class="streak">🔥 ${currentStreak(t)}</div>
-    <div class="task-actions"><button data-edit="${t.id}" aria-label="Edit">✎</button><button data-delete="${t.id}" aria-label="Delete">⋯</button></div>
-  </div>`;
+function goalProgress(t){return Math.min(100,Math.round(logsFor(t.id).length/(Number(t.goal)||1)*100))}
+function taskCard(t){
+ const count=logsFor(t.id).length, streak=currentStreak(t);
+ return `<article class="task-card">
+  <div class="task-row">
+   <button class="plus ${count>=Number(t.goal)?"done":""}" data-log="${t.id}" title="Log one completion">+</button>
+   <div class="task-info" data-detail="${t.id}"><div class="task-name">${esc(t.name)}</div><div class="task-meta"><span class="pill">${esc(t.category)}</span><span class="priority-${t.priority}">${t.priority}</span><span>${t.repeat}</span>${t.time?`<span>⏰ ${t.time}</span>`:""}</div></div>
+   <div class="streak-box"><strong>🔥 ${streak}</strong><small>day${streak===1?"":"s"}</small></div>
+  </div>
+  <div class="task-progress"><i style="width:${goalProgress(t)}%"></i></div>
+  <div class="task-meta" style="justify-content:space-between;margin-top:7px"><span>${count} / ${t.goal} today</span><span>${t.active?"Active":"Paused"}</span></div>
+  <div class="card-actions"><button data-edit="${t.id}">Edit</button><button data-pause="${t.id}">${t.active?"Pause":"Resume"}</button><button data-delete="${t.id}">Delete</button></div>
+ </article>`
 }
-function escapeHtml(s){return s.replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;"}[c]))}
 function render(){
-  const ts=data.tasks.filter(t=>scheduled(t,today()));
-  const completed=ts.filter(t=>done(t.id,today())).length;
-  const pct=ts.length?Math.round(completed/ts.length*100):0;
-  $("#progressText").textContent=`${completed} / ${ts.length}`;
-  $("#progressPercent").textContent=pct+"%";
-  $("#progressBar").style.width=pct+"%";
-  $("#todayList").innerHTML=ts.map(t=>taskCard(t)).join("");
-  $("#emptyToday").classList.toggle("hidden",ts.length>0);
-  $("#allTasksList").innerHTML=data.tasks.length?data.tasks.map(t=>taskCard(t,false)).join(""):`<div class="empty"><div class="empty-icon">📝</div><h3>No tasks</h3><p>Create a recurring task to begin.</p></div>`;
-  $("#statsList").innerHTML=data.tasks.length?data.tasks.map(t=>`<div class="stat"><div><h3>${escapeHtml(t.name)}</h3><small>Best streak: ${bestStreak(t)} day${bestStreak(t)===1?"":"s"}</small></div><div class="stat-number">🔥 ${currentStreak(t)}</div></div>`).join(""):`<div class="empty"><div class="empty-icon">🔥</div><h3>Your streaks will appear here</h3></div>`;
-  bindActions();
+ const active=db.tasks.filter(t=>scheduled(t,today()));
+ const total=active.reduce((s,t)=>s+Number(t.goal||1),0);
+ const done=active.reduce((s,t)=>s+logsFor(t.id).length,0);
+ const pct=total?Math.min(100,Math.round(done/total*100)):0;
+ $("#dateLabel").textContent=new Date().toLocaleDateString(undefined,{weekday:"long",month:"long",day:"numeric"});
+ $("#mProgress").textContent=pct+"%";$("#mProgressBar").style.width=pct+"%";$("#mCompleted").textContent=done;
+ const streaks=active.filter(t=>currentStreak(t)>0);$("#mStreaks").textContent=streaks.length;
+ $("#mBest").textContent=Math.max(0,...db.tasks.map(bestStreak));
+ $("#todayTasks").innerHTML=active.map(taskCard).join("");$("#todayEmpty").classList.toggle("hidden",active.length>0);
+ const q=$("#taskSearch").value.toLowerCase(),f=$("#taskFilter").value,p=$("#priorityFilter").value;
+ const all=db.tasks.filter(t=>(!q||t.name.toLowerCase().includes(q)||t.notes.toLowerCase().includes(q))&&(f==="all"||(f==="active"&&t.active)||(f==="paused"&&!t.active))&&(p==="all"||t.priority===p));
+ $("#allTasks").innerHTML=all.length?all.map(taskCard).join(""):`<div class="empty"><div>📝</div><h3>No matching tasks</h3><p>Try another filter or create a task.</p></div>`;
+ const longest=Math.max(0,...db.tasks.map(bestStreak));$("#longest").textContent=longest+" day"+(longest===1?"":"s");
+ const month=new Date().toISOString().slice(0,7);$("#monthLogs").textContent=db.logs.filter(x=>x.date.startsWith(month)).length;
+ $("#streakList").innerHTML=db.tasks.length?db.tasks.slice().sort((a,b)=>currentStreak(b)-currentStreak(a)).map(t=>`<article class="task-card"><div class="task-row"><div class="task-info"><div class="task-name">${esc(t.name)}</div><div class="task-meta"><span>${esc(t.category)}</span><span>Best ${bestStreak(t)} days</span></div></div><div class="streak-box"><strong>🔥 ${currentStreak(t)}</strong><small>current</small></div></div></article>`).join(""):`<div class="empty"><div>🔥</div><h3>No streaks yet</h3></div>`;
+ renderHistory();renderActivity();bind();
 }
-function bindActions(){
-  document.querySelectorAll("[data-toggle]").forEach(b=>b.onclick=()=>toggle(b.dataset.toggle));
-  document.querySelectorAll("[data-edit]").forEach(b=>b.onclick=()=>openModal(b.dataset.edit));
-  document.querySelectorAll("[data-delete]").forEach(b=>b.onclick=()=>deleteTask(b.dataset.delete));
+function renderActivity(){
+ const logs=db.logs.slice().sort((a,b)=>(b.date+b.time).localeCompare(a.date+a.time)).slice(0,8);
+ $("#recentActivity").innerHTML=logs.length?logs.map(l=>{const t=db.tasks.find(x=>x.id===l.taskId);return t?`<div class="log-row"><span>✓</span><b>${esc(t.name)}</b><span class="log-time">${l.date===today()?"Today":fmt(l.date,{month:"short",day:"numeric"})} · ${l.time}</span></div>`:""}).join(""):`<div class="empty"><p>No activity yet.</p></div>`;
 }
-function openModal(id=null){
-  $("#modal").classList.remove("hidden");
-  $("#taskId").value=id||"";
-  $("#modalTitle").textContent=id?"Edit task":"Add task";
-  if(id){const t=data.tasks.find(x=>x.id===id);$("#taskName").value=t.name;$("#taskRepeat").value=t.repeat;$("#taskTime").value=t.time||""}
-  else{$("#taskForm").reset();$("#taskRepeat").value="daily"}
-  setTimeout(()=>$("#taskName").focus(),50);
+function renderHistory(){
+ const groups={};db.logs.slice().sort((a,b)=>(b.date+b.time).localeCompare(a.date+a.time)).forEach(l=>(groups[l.date]??=[]).push(l));
+ $("#historyList").innerHTML=Object.keys(groups).length?Object.entries(groups).map(([d,logs])=>`<div class="day-block"><div class="day-head"><span>${d===today()?"Today":fmt(d)}</span><small>${logs.length} completion${logs.length===1?"":"s"}</small></div>${logs.map(l=>{const t=db.tasks.find(x=>x.id===l.taskId);return t?`<div class="log-row"><span>✓</span><b>${esc(t.name)}</b><span class="log-time">${l.time}</span><button class="link" data-remove-log="${l.id}">×</button></div>`:""}).join("")}</div>`).join(""):`<div class="empty"><div>◷</div><h3>No history</h3><p>Your completion history will appear here.</p></div>`;
 }
-function closeModal(){$("#modal").classList.add("hidden")}
-function deleteTask(id){
-  const t=data.tasks.find(x=>x.id===id);
-  if(!t||!confirm(`Delete "${t.name}"?`))return;
-  data.tasks=data.tasks.filter(x=>x.id!==id);
-  Object.keys(data.history).forEach(d=>data.history[d]=data.history[d].filter(x=>x!==id));
-  save();toast("Task deleted");
+function bind(){
+ $$("[data-log]").forEach(b=>b.onclick=e=>{e.stopPropagation();addLog(b.dataset.log)});
+ $$("[data-detail]").forEach(b=>b.onclick=()=>openDetail(b.dataset.detail));
+ $$("[data-edit]").forEach(b=>b.onclick=()=>openTask(b.dataset.edit));
+ $$("[data-delete]").forEach(b=>b.onclick=()=>delTask(b.dataset.delete));
+ $$("[data-pause]").forEach(b=>b.onclick=()=>{const t=db.tasks.find(x=>x.id===b.dataset.pause);t.active=!t.active;save();toast(t.active?"Task resumed":"Task paused")});
+ $$("[data-remove-log]").forEach(b=>b.onclick=()=>removeLog(b.dataset.removeLog));
 }
-$("#taskForm").onsubmit=e=>{
-  e.preventDefault();
-  const id=$("#taskId").value,name=$("#taskName").value.trim();
-  if(!name)return;
-  const existing=id&&data.tasks.find(t=>t.id===id);
-  if(existing){existing.name=name;existing.repeat=$("#taskRepeat").value;existing.time=$("#taskTime").value}
-  else data.tasks.push({id:uid(),name,repeat:$("#taskRepeat").value,time:$("#taskTime").value,createdAt:today()});
-  save();closeModal();toast(id?"Task updated":"Task added");
-};
-$("#closeModal").onclick=closeModal;$("#cancelBtn").onclick=closeModal;
-$("#addTaskBtn").onclick=()=>openModal();$("#addTodayBtn").onclick=()=>openModal();
-document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>{
-  document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));b.classList.add("active");
-  document.querySelectorAll(".panel").forEach(x=>x.classList.remove("active"));$("#"+b.dataset.tab).classList.add("active");
-});
-function toast(msg){const t=$("#toast");t.textContent=msg;t.classList.add("show");setTimeout(()=>t.classList.remove("show"),1800)}
-window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();deferredInstall=e;$("#installBtn").classList.remove("hidden")});
-$("#installBtn").onclick=async()=>{if(!deferredInstall)return;deferredInstall.prompt();await deferredInstall.userChoice;deferredInstall=null;$("#installBtn").classList.add("hidden")};
-if("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(()=>{});
-render();
+function openTask(id=null){
+ $("#taskModal").classList.remove("hidden");$("#editId").value=id||"";
+ if(id){const t=db.tasks.find(x=>x.id===id);$("#modalTitle").textContent="Edit task";$("#name").value=t.name;$("#category").value=t.category;$("#priority").value=t.priority;$("#repeat").value=t.repeat;$("#time").value=t.time;$("#goal").value=t.goal;$("#notes").value=t.notes;$("#active").checked=t.active}
+ else{$("#modalTitle").textContent="New task";$("#taskForm").reset();$("#goal").value=1;$("#active").checked=true}
+ setTimeout(()=>$("#name").focus(),50)
+}
+$("#taskForm").onsubmit=e=>{e.preventDefault();const id=$("#editId").value;let t=id?db.tasks.find(x=>x.id===id):{id:uid(),createdAt:today(),dueDate:today()};Object.assign(t,{name:$("#name").value.trim(),category:$("#category").value,priority:$("#priority").value,repeat:$("#repeat").value,time:$("#time").value,goal:Math.max(1,Number($("#goal").value)||1),notes:$("#notes").value.trim(),active:$("#active").checked});if(!id)db.tasks.push(t);save();close("taskModal");toast(id?"Task updated":"Task created")}
+function delTask(id){const t=db.tasks.find(x=>x.id===id);if(t&&confirm(`Delete "${t.name}" and its history?`)){db.tasks=db.tasks.filter(x=>x.id!==id);db.logs=db.logs.filter(x=>x.taskId!==id);save();toast("Task deleted")}}
+function openDetail(id){const t=db.tasks.find(x=>x.id===id);if(!t)return;const count=logsFor(id).length;$("#detailName").textContent=t.name;$("#detailBody").innerHTML=`<div class="detail-stat"><div><small>Today</small><strong>${count}</strong></div><div><small>Current streak</small><strong>🔥 ${currentStreak(t)}</strong></div><div><small>Best streak</small><strong>${bestStreak(t)}</strong></div></div><p class="muted">${esc(t.notes)||"No notes."}</p><button class="primary" style="width:100%;margin-top:18px" data-log="${id}">+ Log another completion</button>`;$("#detailBody [data-log]").onclick=()=>addLog(id);$("#detailModal").classList.remove("hidden")}
+function close(id){$("#"+id).classList.add("hidden")}
+$$("[data-close]").forEach(b=>b.onclick=()=>close(b.dataset.close));
+$$("[data-nav]").forEach(b=>b.onclick=()=>navigate(b.dataset.nav));
+function navigate(n){$$(".view").forEach(v=>v.classList.remove("active"));$("#"+n+"View").classList.add("active");$$(".nav").forEach(v=>v.classList.toggle("active",v.dataset.nav===n));window.scrollTo(0,0)}
+$("#quickAdd").onclick=()=>openTask();$("#emptyAdd").onclick=()=>openTask();$("#addTask").onclick=()=>openTask();$("#settingsBtn").onclick=()=>navigate("settings");
+$("#searchBtn").onclick=()=>{$("#searchModal").classList.remove("hidden");$("#globalSearch").focus()};
+$("#taskSearch").oninput=render;$("#taskFilter").onchange=render;$("#priorityFilter").onchange=render;
+$("#globalSearch").oninput=()=>{const q=$("#globalSearch").value.toLowerCase();$("#searchResults").innerHTML=db.tasks.filter(t=>t.name.toLowerCase().includes(q)||t.notes.toLowerCase().includes(q)).map(t=>`<div class="search-item"><b>${esc(t.name)}</b><small>${esc(t.category)} · 🔥 ${currentStreak(t)}</small></div>`).join("")||"<p class='muted'>No results.</p>"};
+function toggleTheme(){db.settings.theme=db.settings.theme==="dark"?"light":"dark";applyTheme();save()}
+function applyTheme(){document.documentElement.dataset.theme=db.settings.theme==="dark"?"dark":"light"}
+$("#themeBtn").onclick=toggleTheme;
+$("#notifyBtn").onclick=async()=>{if(!("Notification"in window)){toast("Notifications are not supported here");return}const p=await Notification.requestPermission();toast(p==="granted"?"Notifications enabled":"Permission not granted")};
+$("#backupBtn").onclick=exportData;$("#exportBtn").onclick=exportData;
+function exportData(){const blob=new Blob([JSON.stringify(db,null,2)],{type:"application/json"}),a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="taskflow-backup-"+today()+".json";a.click();URL.revokeObjectURL(a.href);toast("Backup exported")}
+$("#importInput").onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{const x=JSON.parse(r.result);if(!x.tasks||!x.logs)throw Error();db=x;save();toast("Backup imported")}catch{toast("Invalid backup file")}};r.readAsText(f)};
+$("#resetBtn").onclick=()=>{if(confirm("Reset all local TaskFlow data?")){db={tasks:[],logs:[],settings:{theme:"light"}};save();toast("Data reset")}};
+window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();deferredInstall=e});
+$("#installSettings").onclick=async()=>{if(deferredInstall){deferredInstall.prompt();await deferredInstall.userChoice;deferredInstall=null}else toast("On iPhone: Safari Share → Add to Home Screen")};
+function checkReminder(t){if(t.time&&"Notification"in window&&Notification.permission==="granted") new Notification("TaskFlow",{body:`${t.name} completed. Keep your ${currentStreak(t)}-day streak!`})}
+if("serviceWorker"in navigator)navigator.serviceWorker.register("sw.js").catch(()=>{});
+applyTheme();render();

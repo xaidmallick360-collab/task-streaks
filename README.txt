@@ -1,26 +1,26 @@
-TASK STREAKS PWA
-================
+TASKFLOW PRO PWA
+=================
+A professional mobile-first task and streak tracker.
 
-Files:
-- index.html
-- style.css
-- app.js
-- manifest.json
-- sw.js
-- icon-192.png
-- icon-512.png
+Features:
+- Unlimited completion logs per task per day
+- Daily goals (e.g. 5 completions/day)
+- Current and best streaks
+- Daily progress dashboard
+- Categories and priorities
+- Daily / weekdays / weekly / one-time recurrence
+- Reminder time field
+- Notes
+- Pause/resume
+- Search and filters
+- History
+- Export/import JSON backup
+- Dark mode
+- PWA install support
+- Offline app shell through service worker
 
-IMPORTANT:
-A PWA must be served over HTTPS (or localhost) for the service worker/install features to work.
+Current data model:
+Data is stored locally in the browser. No account or cloud server is included.
 
-Quick local test:
-1. Install Python.
-2. Open a terminal in this folder.
-3. Run: python -m http.server 8000
-4. Open: http://localhost:8000
-
-For iPhone:
-Deploy these files to any HTTPS web host. Open the HTTPS address in Safari, then:
-Share -> Add to Home Screen.
-
-The current version stores tasks/history in the browser's localStorage. It does not yet have cloud login/sync.
+Notification note:
+Browser notification permission is supported where the browser/platform permits it, but this build does NOT promise background scheduled reminders when the browser is closed. For reliable iPhone timed reminders, the next production step is a native iOS notification layer or a cloud push/notification service.
