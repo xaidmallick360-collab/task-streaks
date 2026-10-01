@@ -1,5 +1,5 @@
-const CACHE="taskflow-pro-v2-2026-10";
-const ASSETS=["./","./index.html?v=2.0.0","./style.css?v=2.0.0","./app.js?v=2.0.0","./manifest.json?v=2.0.0","./icon-192.png?v=2.0.0","./icon-512.png?v=2.0.0"];
+const CACHE="taskflow-pro-v2-1-2026-10";
+const ASSETS=["./","./index.html?v=2.1.0","./style.css?v=2.1.0","./app.js?v=2.1.0","./manifest.json?v=2.1.0","./icon-192.png?v=2.1.0","./icon-512.png?v=2.1.0"];
 
 self.addEventListener("install",event=>{
   self.skipWaiting();
@@ -20,4 +20,11 @@ self.addEventListener("fetch",event=>{
       return r;
     }).catch(()=>caches.match(event.request).then(r=>r||caches.match("./index.html")))
   );
+});
+self.addEventListener("notificationclick",event=>{
+  event.notification.close();
+  event.waitUntil(clients.matchAll({type:"window",includeUncontrolled:true}).then(list=>{
+    for(const c of list){if("focus"in c)return c.focus()}
+    return clients.openWindow("./");
+  }));
 });

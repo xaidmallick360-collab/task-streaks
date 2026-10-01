@@ -4,8 +4,13 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#111827">
-<link rel="manifest" href="manifest.json?v=2.0.0">
-<link rel="stylesheet" href="style.css?v=2.0.0">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="TaskFlow">
+<link rel="apple-touch-icon" href="icon-192.png?v=2.1.0">
+<link rel="manifest" href="manifest.json?v=2.1.0">
+<link rel="stylesheet" href="style.css?v=2.1.0">
 <title>TaskFlow — Tasks & Streaks</title>
 </head>
 <body>
@@ -15,7 +20,7 @@
 </header>
 <main>
 <section id="todayView" class="view active">
-  <div class="hero"><div><p class="eyebrow">TODAY</p><h1 id="dateLabel">Today</h1></div><button id="quickAdd" class="primary">＋ Add task</button></div>
+  <div class="hero"><div><p class="eyebrow">TODAY</p><h1 id="dateLabel">Today</h1></div><div class="hero-btns"><button id="tplBtn" class="ghost">Templates</button><button id="quickAdd" class="primary">＋ Add task</button></div></div>
   <div class="metrics">
     <div class="metric"><small>Today's progress</small><strong id="mProgress">0%</strong><div class="bar"><i id="mProgressBar"></i></div></div>
     <div class="metric"><small>Completed</small><strong id="mCompleted">0</strong></div>
@@ -36,6 +41,7 @@
 <section id="streaksView" class="view">
   <div class="hero"><div><p class="eyebrow">PROGRESS</p><h1>Streaks</h1></div></div>
   <div class="metrics"><div class="metric"><small>Longest streak</small><strong id="longest">0 days</strong></div><div class="metric"><small>This month</small><strong id="monthLogs">0</strong></div></div>
+  <section class="panel"><div class="panel-head"><h2>Last 7 days</h2></div><div id="weekChart" class="week"></div></section>
   <div id="streakList" class="task-list"></div>
 </section>
 
@@ -48,6 +54,12 @@
   <div class="hero"><div><p class="eyebrow">PREFERENCES</p><h1>Settings</h1></div></div>
   <div class="panel settings-list">
     <button id="notifyBtn">🔔 Enable notifications</button>
+    <button id="notifyTest">🔊 Send test reminder</button>
+    <label class="row-set">Ringtone<select id="soundSel"><option value="chime">Chime</option><option value="bell">Bell</option><option value="melody">Melody</option><option value="beep">Beep</option><option value="alarm">Alarm</option><option value="none">Silent</option></select></label>
+    <label class="row-set">Volume<input id="volume" type="range" min="0" max="1" step="0.05"></label>
+    <label class="row-set">Snooze (minutes)<select id="snoozeSel"><option>5</option><option>10</option><option>15</option><option>30</option></select></label>
+    <label class="check row-set"><input id="vibrate" type="checkbox"> Vibrate (Android)</label>
+    <p class="muted small">Reminders ring while TaskFlow is open or in the background. On iPhone, add TaskFlow to the Home Screen first.</p>
     <button id="installSettings">📲 Install app</button>
     <button id="themeBtn">🌙 Toggle dark mode</button>
     <button id="backupBtn">⬇ Export backup</button>
@@ -76,9 +88,12 @@
 <button class="primary full" type="submit">Save task</button>
 </form></div></div>
 
+<div id="tplModal" class="modal hidden"><div class="modal-card"><div class="modal-head"><h2>Task templates</h2><button data-close="tplModal">×</button></div><div id="tplBody"></div></div></div>
+<div id="alarm" class="alarm hidden"><div><b id="alarmName"></b><small id="alarmSub"></small></div><div class="alarm-btns"><button id="alarmDone" class="primary">Done</button><button id="alarmSnooze">Snooze</button><button id="alarmStop">×</button></div></div>
+<div id="toastEl" class="toast hidden"></div>
 <div id="detailModal" class="modal hidden"><div class="modal-card"><div class="modal-head"><h2 id="detailName"></h2><button data-close="detailModal">×</button></div><div id="detailBody"></div></div></div>
 <div id="searchModal" class="modal hidden"><div class="modal-card"><div class="modal-head"><h2>Search</h2><button data-close="searchModal">×</button></div><input id="globalSearch" placeholder="Search…"><div id="searchResults"></div></div></div>
 
-<script src="app.js?v=2.0.0"></script>
+<script src="app.js?v=2.1.0"></script>
 </body>
 </html>
