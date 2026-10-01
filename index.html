@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#111827">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Task Streaks">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <link rel="stylesheet" href="style.css">
+  <title>Task Streaks</title>
+</head>
+<body>
+  <main class="app">
+    <header class="topbar">
+      <div>
+        <div class="eyebrow">MY PRODUCTIVITY</div>
+        <h1>Task Streaks</h1>
+      </div>
+      <button id="installBtn" class="icon-btn hidden" aria-label="Install app">＋</button>
+    </header>
+
+    <section class="hero">
+      <div>
+        <p class="muted">Today's progress</p>
+        <div class="progress-row">
+          <strong id="progressText">0 / 0</strong>
+          <span id="progressPercent">0%</span>
+        </div>
+        <div class="progress"><div id="progressBar"></div></div>
+      </div>
+      <div class="hero-fire">🔥</div>
+    </section>
+
+    <nav class="tabs">
+      <button class="tab active" data-tab="today">Today</button>
+      <button class="tab" data-tab="tasks">Tasks</button>
+      <button class="tab" data-tab="stats">Streaks</button>
+    </nav>
+
+    <section id="today" class="panel active">
+      <div class="section-head">
+        <h2>Today's tasks</h2>
+        <button class="primary small" id="addTodayBtn">+ Add</button>
+      </div>
+      <div id="todayList" class="task-list"></div>
+      <div id="emptyToday" class="empty hidden">
+        <div class="empty-icon">🎯</div>
+        <h3>No tasks yet</h3>
+        <p>Add your first task and start building your streak.</p>
+      </div>
+    </section>
+
+    <section id="tasks" class="panel">
+      <div class="section-head">
+        <h2>All tasks</h2>
+        <button class="primary small" id="addTaskBtn">+ Add task</button>
+      </div>
+      <div id="allTasksList" class="task-list"></div>
+    </section>
+
+    <section id="stats" class="panel">
+      <div class="section-head"><h2>Your streaks</h2></div>
+      <div id="statsList" class="stats-list"></div>
+    </section>
+  </main>
+
+  <div id="modal" class="modal hidden">
+    <div class="modal-card">
+      <div class="modal-head">
+        <h2 id="modalTitle">Add task</h2>
+        <button id="closeModal" class="close">×</button>
+      </div>
+      <form id="taskForm">
+        <input type="hidden" id="taskId">
+        <label>Task name
+          <input id="taskName" required maxlength="80" placeholder="e.g. Daily report">
+        </label>
+        <label>Repeat
+          <select id="taskRepeat">
+            <option value="daily">Every day</option>
+            <option value="weekdays">Weekdays</option>
+            <option value="weekly">Weekly</option>
+          </select>
+        </label>
+        <label>Reminder time <span class="optional">optional</span>
+          <input id="taskTime" type="time">
+        </label>
+        <div class="form-actions">
+          <button type="button" class="secondary" id="cancelBtn">Cancel</button>
+          <button type="submit" class="primary">Save task</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="toast" class="toast"></div>
+  <script src="app.js"></script>
+</body>
+</html>
