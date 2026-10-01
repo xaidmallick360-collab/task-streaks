@@ -1,26 +1,8 @@
-TASKFLOW PRO PWA
-=================
-A professional mobile-first task and streak tracker.
+TaskFlow Version 2.0.0
+Deploy all files in this folder to the root of your GitHub Pages repository.
 
-Features:
-- Unlimited completion logs per task per day
-- Daily goals (e.g. 5 completions/day)
-- Current and best streaks
-- Daily progress dashboard
-- Categories and priorities
-- Daily / weekdays / weekly / one-time recurrence
-- Reminder time field
-- Notes
-- Pause/resume
-- Search and filters
-- History
-- Export/import JSON backup
-- Dark mode
-- PWA install support
-- Offline app shell through service worker
-
-Current data model:
-Data is stored locally in the browser. No account or cloud server is included.
-
-Notification note:
-Browser notification permission is supported where the browser/platform permits it, but this build does NOT promise background scheduled reminders when the browser is closed. For reliable iPhone timed reminders, the next production step is a native iOS notification layer or a cloud push/notification service.
+Important:
+- app.js keeps localStorage key taskflow-pro-v1 so existing tasks/history are preserved.
+- sw.js uses a new cache name and skipWaiting/clientsClaim to force the new assets.
+- index.html references versioned assets (?v=2.0.0).
+- After upload, open the GitHub Pages URL in Safari and refresh once. If the old Home Screen app remains, remove the old Home Screen icon and add the site again.

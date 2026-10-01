@@ -1,4 +1,5 @@
-const KEY="taskflow-pro-v1";
+const APP_VERSION="2.0.0";
+const KEY="taskflow-pro-v1"; // Keep existing data so your tasks/history are preserved.
 let db=JSON.parse(localStorage.getItem(KEY)||'{"tasks":[],"logs":[],"settings":{"theme":"light"}}');
 let deferredInstall=null;
 const $=s=>document.querySelector(s), $$=s=>document.querySelectorAll(s);
@@ -58,7 +59,8 @@ function render(){
  const total=active.reduce((s,t)=>s+Number(t.goal||1),0);
  const done=active.reduce((s,t)=>s+logsFor(t.id).length,0);
  const pct=total?Math.min(100,Math.round(done/total*100)):0;
- $("#dateLabel").textContent=new Date().toLocaleDateString(undefined,{weekday:"long",month:"long",day:"numeric"});
+ const versionEl=$("#appVersion"); if(versionEl) versionEl.textContent="v"+APP_VERSION;
+  $("#dateLabel").textContent=new Date().toLocaleDateString(undefined,{weekday:"long",month:"long",day:"numeric"});
  $("#mProgress").textContent=pct+"%";$("#mProgressBar").style.width=pct+"%";$("#mCompleted").textContent=done;
  const streaks=active.filter(t=>currentStreak(t)>0);$("#mStreaks").textContent=streaks.length;
  $("#mBest").textContent=Math.max(0,...db.tasks.map(bestStreak));
@@ -115,5 +117,5 @@ $("#resetBtn").onclick=()=>{if(confirm("Reset all local TaskFlow data?")){db={ta
 window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();deferredInstall=e});
 $("#installSettings").onclick=async()=>{if(deferredInstall){deferredInstall.prompt();await deferredInstall.userChoice;deferredInstall=null}else toast("On iPhone: Safari Share → Add to Home Screen")};
 function checkReminder(t){if(t.time&&"Notification"in window&&Notification.permission==="granted") new Notification("TaskFlow",{body:`${t.name} completed. Keep your ${currentStreak(t)}-day streak!`})}
-if("serviceWorker"in navigator)navigator.serviceWorker.register("sw.js").catch(()=>{});
+if("serviceWorker"in navigator)navigator.serviceWorker.register("sw.js?v=2.0.0",{updateViaCache:"none"}).catch(()=>{});
 applyTheme();render();

@@ -1,5 +1,23 @@
-const CACHE="taskflow-pro-v1";
-const ASSETS=["./","./index.html","./style.css","./app.js","./manifest.json","./icon-192.png","./icon-512.png"];
-self.addEventListener("install",e=>e.waitUntil(caches.open(CACHE).then(c=>c.addAll(ASSETS))));
-self.addEventListener("activate",e=>e.waitUntil(caches.keys().then(k=>Promise.all(k.filter(x=>x!==CACHE).map(x=>caches.delete(x))))));
-self.addEventListener("fetch",e=>e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request))));
+const CACHE="taskflow-pro-v2-2026-10";
+const ASSETS=["./","./index.html?v=2.0.0","./style.css?v=2.0.0","./app.js?v=2.0.0","./manifest.json?v=2.0.0","./icon-192.png?v=2.0.0","./icon-512.png?v=2.0.0"];
+
+self.addEventListener("install",event=>{
+  self.skipWaiting();
+  event.waitUntil(caches.open(CACHE).then(c=>c.addAll(ASSETS)));
+});
+self.addEventListener("activate",event=>{
+  event.waitUntil(
+    caches.keys().then(keys=>Promise.all(keys.filter(k=>k.startsWith("taskflow-pro-")&&k!==CACHE).map(k=>caches.delete(k))))
+    .then(()=>self.clients.claim())
+  );
+});
+self.addEventListener("fetch",event=>{
+  if(event.request.method!=="GET") return;
+  event.respondWith(
+    fetch(event.request).then(r=>{
+      const copy=r.clone();
+      caches.open(CACHE).then(c=>c.put(event.request,copy)).catch(()=>{});
+      return r;
+    }).catch(()=>caches.match(event.request).then(r=>r||caches.match("./index.html")))
+  );
+});
