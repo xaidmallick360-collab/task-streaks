@@ -231,7 +231,7 @@ applyTheme();render();tick();
 
 /* ===== v2.2 background push ===== */
 const PUSH_URL="https://taskflow-push.amin-taskflow-2026.workers.dev"; // set after deploying /worker
-const VAPID_PUBLIC="BDtWDQbR8UC0kpbF4y5mruoiTKR-E-vuslfBDyyVq5TrCrwNJ2XL4p7LFR38HRJ5SNwlyNNmBE_WGlMgwQyYKUQ";
+const VAPID_PUBLIC="BEIUoAPXvVtKpGH8MyYCsjgn4zFnSDBRjkHdWOd8Bdn_hFl1f_r5PpGUluIM3Sz1JR_8ns-IDwiifMSYcUGPS6w";
 const pushReady=()=>PUSH_URL.startsWith("https://")&&!PUSH_URL.includes("YOURNAME")&&!VAPID_PUBLIC.includes("PASTE");
 const b64=s=>{const r=(s+"=".repeat((4-s.length%4)%4)).replace(/-/g,"+").replace(/_/g,"/");return Uint8Array.from(atob(r),c=>c.charCodeAt(0))};
 async function pushSub(create){const reg=await navigator.serviceWorker.ready;let s=await reg.pushManager.getSubscription();if(!s&&create)s=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:b64(VAPID_PUBLIC)});return s}
