@@ -1,4 +1,4 @@
-const APP_VERSION="2.2.1";
+const APP_VERSION="2.2.2";
 const KEY="taskflow-pro-v1"; // Keep existing data so your tasks/history are preserved.
 let db=JSON.parse(localStorage.getItem(KEY)||'{"tasks":[],"logs":[],"settings":{"theme":"light"}}');
 let deferredInstall=null;
@@ -117,7 +117,7 @@ $("#resetBtn").onclick=()=>{if(confirm("Reset all local TaskFlow data?")){db={ta
 window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();deferredInstall=e});
 $("#installSettings").onclick=async()=>{if(deferredInstall){deferredInstall.prompt();await deferredInstall.userChoice;deferredInstall=null}else toast("On iPhone: Safari Share → Add to Home Screen")};
 function checkReminder(t){if(t.time&&"Notification"in window&&Notification.permission==="granted") new Notification("TaskFlow",{body:`${t.name} completed. Keep your ${currentStreak(t)}-day streak!`})}
-if("serviceWorker"in navigator)navigator.serviceWorker.register("sw.js?v=2.2.1",{updateViaCache:"none"}).catch(()=>{});
+if("serviceWorker"in navigator)navigator.serviceWorker.register("sw.js?v=2.2.2",{updateViaCache:"none"}).catch(()=>{});
 
 /* ===== v2.1 additions ===== */
 db.settings=Object.assign({theme:"light",sound:"chime",volume:.7,vibrate:true,snooze:10},db.settings||{});
@@ -149,7 +149,7 @@ function buzz(){if(db.settings.vibrate&&navigator.vibrate)navigator.vibrate([200
 /* --- notifications (via service worker, required on iOS/Android) --- */
 async function notify(title,body,tag){
  if(!("Notification"in window)||Notification.permission!=="granted")return;
- try{const reg=await navigator.serviceWorker.ready;await reg.showNotification(title,{body,tag,icon:"icon-192.png?v=2.2.1",badge:"icon-192.png?v=2.2.1",vibrate:[200,100,200],renotify:true})}
+ try{const reg=await navigator.serviceWorker.ready;await reg.showNotification(title,{body,tag,icon:"icon-192.png?v=2.2.2",badge:"icon-192.png?v=2.2.2",vibrate:[200,100,200],renotify:true})}
  catch{try{new Notification(title,{body,tag})}catch{}}
 }
 checkReminder=function(t){notify("TaskFlow",`${t.name} done. Keep your ${currentStreak(t)}-day streak!`,"done-"+t.id)};
@@ -255,3 +255,12 @@ $("#pushBtn").onclick=async()=>{
 const _render2=render;render=function(){_render2();clearTimeout(syncT);syncT=setTimeout(()=>syncPush(),1500)};
 document.addEventListener("visibilitychange",()=>{if(!document.hidden)syncPush()});
 syncPush();
+
+$("#testPushBtn").onclick=async()=>{
+ if(!pushReady()||!db.settings.push){toast("Tap Enable background reminders first");return}
+ try{const s=await pushSub(false);if(!s){toast("No push subscription. Tap Enable again");return}
+  await syncPush(true);
+  const r=await fetch(PUSH_URL+"/test",{method:"POST",headers:{"Content-Type":"text/plain"},body:JSON.stringify({endpoint:s.endpoint,delay:12})});
+  const j=await r.json();toast(j.found?"Sent. Close the app now. Alert in about 12 seconds":"Server has no record. Tap Enable again");
+ }catch(e){toast("Could not reach the server")}
+};
